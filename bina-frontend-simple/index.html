@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Trading Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Crypto Trading Dashboard</h1>
+    <div id="tabs">
+        <button class="tab-button active" data-tab="trade">Trade</button>
+        <button class="tab-button" data-tab="pending-orders">Pending Orders</button>
+        <button class="tab-button" data-tab="filled-orders">Filled Orders</button>
+    </div>
+    <div id="trade-tab" class="tab-content active">
+        <div id="container">
+            <div id="balance"></div>
+            <input type="text" id="coinSearch" list="coinList" placeholder="Search coins...">
+            <datalist id="coinList">
+                <!-- Options will be dynamically populated -->
+            </datalist>
+            <div id="price"></div>
+            
+            <form id="tradeForm">
+                <input type="number" id="topLimit" placeholder="Top Limit" required>
+                <input type="number" id="bottomLimit" placeholder="Bottom Limit" required>
+                <input type="number" id="amount" placeholder="Amount (optional)">
+                <input type="number" id="quantity" placeholder="Quantity (optional)">
+                <button type="submit">Set Order</button>
+            </form>
+            <div id="orderStatus"></div>
+        </div>
+    </div>
+    <div id="pending-orders-tab" class="tab-content">
+        <div id="balance-pending-orders" class="balance-display"></div>
+        <table id="pendingOrdersTable" class="orders-table">
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Currency</th>
+                    <th>Current Price</th>
+                    <th>Top Limit</th>
+                    <th>Bottom Limit</th>
+                    <th>Amount</th>
+                    <th>Top Quantity</th>
+                    <th>Bottom Quantity</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Orders will be dynamically populated here -->
+            </tbody>
+        </table>
+    </div>
+    <div id="filled-orders-tab" class="tab-content">
+        <div id="balance-filled-orders" class="balance-display"></div>
+        <table id="filledOrdersTable" class="orders-table">
+            <thead>
+                <tr>
+                    <th>Currency</th>
+                    <th>Execution Price</th>
+                    <th>Top Limit</th>
+                    <th>Bottom Limit</th>
+                    <th>Amount</th>
+                    <th>Top Quantity</th>
+                    <th>Bottom Quantity</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Filled orders will be dynamically populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="coins.js"></script>
+    <script src="common.js"></script>
+    <script src="script.js"></script>
+    <script src="trade.js"></script>
+    <script src="orders.js"></script>
+    <script src="history.js"></script>
+</body>
+</html>
