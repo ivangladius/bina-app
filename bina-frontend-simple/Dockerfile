@@ -4,14 +4,8 @@ FROM node:14-alpine
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
-
 # Install live-server
 RUN npm install -g live-server
-
-# Copy the current directory contents into the container at /app
-COPY . .
 
 # Make port 8080 available to the world outside this container
 EXPOSE 8080

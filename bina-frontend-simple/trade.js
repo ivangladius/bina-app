@@ -1,18 +1,17 @@
 // Trade tab functionality
+let isPriceFetching = false;
+
 async function updatePrice() {
     if (currentCoin) {
-        try {
-            const response = await fetch(`${SERVER_URL}/price/${currentCoin}`);
-            const data = await response.json();
-            document.getElementById('price').textContent = `Price: $${data.price}`;
-        } catch (error) {
-            console.error('Error fetching price:', error);
+        const price = await updateSharedPrice(currentCoin);
+        if (price !== null) {
+            document.getElementById('price').textContent = `Price: $${price}`;
+        } else {
             document.getElementById('price').textContent = 'Error fetching price';
         }
     } else {
         document.getElementById('price').textContent = '';
     }
-    return new Promise(resolve => setTimeout(resolve, 1000));
 }
 
 function startPriceUpdates() {
@@ -23,11 +22,8 @@ function startPriceUpdates() {
     currentCoin = document.getElementById('coinSearch').value.split(' ')[0];
 
     if (currentCoin) {
-        async function update() {
-            await updatePrice();
-            priceUpdateInterval = setTimeout(update, 0);
-        }
-        update();
+        updatePrice(); // Fetch price immediately
+        priceUpdateInterval = setInterval(updatePrice, 1000);
     } else {
         document.getElementById('price').textContent = '';
     }
@@ -110,3 +106,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Populate coin list
     populateCoinList();
 });
+
+function stopPriceUpdates() {
+    if (priceUpdateInterval) {
+        clearInterval(priceUpdateInterval);
+        priceUpdateInterval = null;
+    }
+}

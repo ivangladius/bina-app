@@ -34,20 +34,28 @@ def insert_filled_order(order: Dict):
             INSERT INTO filled_orders (id, symbol, side, quantity, price, timestamp)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (
-            order['id'],
+            str(order['id']),
             order['symbol'],
-            order['side'],
+            'BUY',  # Assuming all orders are buy orders
             order['quantity'],
-            order['price'],
-            order['timestamp']
+            order['execution_price'],
+            order['time']
         ))
         conn.commit()
 
 def get_filled_orders(limit: int) -> List[Dict]:
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM filled_orders ORDER BY timestamp DESC LIMIT ?', (limit,))
-        rows = cursor.fetchall()
+        try:
+            cursor.execute('SELECT * FROM filled_orders ORDER BY timestamp DESC LIMIT ?', (limit,))
+            rows = cursor.fetchall()
+        except sqlite3.OperationalError as e:
+            if "no such table" in str(e):
+                print("The filled_orders table doesn't exist. Initializing the database...")
+                init_db()
+                return []
+            else:
+                raise e
     
     return [
         {

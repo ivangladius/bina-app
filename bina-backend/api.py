@@ -81,20 +81,38 @@ async def start_trade(params: TradeParams):
             )
             
             if executed_order:
+                # Add the symbol to the executed_order
+                executed_order['symbol'] = symbol
+                
                 # Remove the pending order
-                pending_orders.remove(pending_order)
+                try:
+                    pending_orders.remove(pending_order)
+                except ValueError:
+                    print(f"Pending order {pending_order['id']} not found in the list")
+                
+                # Add the executed order to the filled_orders list
+                filled_orders.append(executed_order)
                 
                 # Insert the executed order into the database
-                database.insert_filled_order(executed_order)
+                try:
+                    database.insert_filled_order(executed_order)
+                except Exception as db_error:
+                    print(f"Error inserting order into database: {str(db_error)}")
                 
                 print(f"Trade executed successfully: {executed_order['id']}")
             else:
                 # Remove the pending order if execution failed
-                pending_orders.remove(pending_order)
+                try:
+                    pending_orders.remove(pending_order)
+                except ValueError:
+                    print(f"Pending order {pending_order['id']} not found in the list")
                 print("Trade execution failed")
         except Exception as e:
             # Remove the pending order if an exception occurred
-            pending_orders.remove(pending_order)
+            try:
+                pending_orders.remove(pending_order)
+            except ValueError:
+                print(f"Pending order {pending_order['id']} not found in the list")
             print(f"An error occurred: {str(e)}")
     
     # Start the trade operation in the background
@@ -108,9 +126,8 @@ async def get_pending_orders(limit: int = Query(10, description="Number of recen
     return {"pending_orders": recent_orders}
 
 @app.get("/filled_orders")
-async def get_filled_orders(limit: int = Query(10, description="Number of recent filled orders to retrieve")):
-    filled_orders = database.get_filled_orders(limit)
-    return {"filled_orders": filled_orders}
+async def get_filled_orders(limit: int = Query(10, ge=1, le=100)):
+    return database.get_filled_orders(limit)
 
 @app.get("/candles")
 async def get_candle_data(pair: str = Query(...), interval: str = Query(default="1h"), limit: int = Query(default=100)):
@@ -176,11 +193,6 @@ async def get_order(order_id: str):
     
     raise HTTPException(status_code=404, detail="Order not found")
 
-@app.get("/", response_class=HTMLResponse)
-async def read_root():
-    with open("/static/index.html", "r") as f:
-        return f.read()
-
 @app.delete("/order/{order_id}")
 async def delete_order(order_id: str, refund_amount: float = Query(..., description="Amount to be refunded")):
     global pending_orders, total_trade_amount
@@ -199,6 +211,21 @@ async def delete_order(order_id: str, refund_amount: float = Query(..., descript
         return {"message": "Filled order deleted successfully", "order_id": order_id}
     
     raise HTTPException(status_code=404, detail="Order not found")
+
+@app.delete("/filled_order/{order_id}")
+async def delete_filled_order(order_id: str):
+    global filled_orders
+    
+    # Try to delete from filled orders in memory
+    filled_order = next((order for order in filled_orders if order['id'] == order_id), None)
+    if filled_order:
+        filled_orders = [order for order in filled_orders if order['id'] != order_id]
+    
+    # Try to delete from the database
+    if database.delete_filled_order(order_id):
+        return {"message": "Filled order deleted successfully from database", "order_id": order_id}
+    else:
+        raise HTTPException(status_code=404, detail="Filled order not found in database")
 
 if __name__ == "__main__":
     database.init_db()  # Initialize the database

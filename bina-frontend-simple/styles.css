@@ -360,3 +360,39 @@ button:hover {
     margin: 20px 0;
     color: #4CAF50;
 }
+
+.loading-row {
+    text-align: center;
+}
+
+.loading-circle {
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+    border: 6px solid rgba(76, 175, 80, 0.3);
+    border-radius: 50%;
+    border-top-color: #4CAF50;
+    animation: spin 1s ease-in-out infinite;
+    margin: 40px 0;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.orders-table-container {
+    position: relative;
+    min-height: 200px;
+}
+
+.loading-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(42, 42, 42, 0.8);
+}

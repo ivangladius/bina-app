@@ -85,3 +85,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     switchTab('trade');
 });
+
+// Add this to the existing code in common.js
+let priceCacheMap = new Map();
+let priceUpdatePromises = new Map();
+
+async function updateSharedPrice(currency) {
+    if (!priceCacheMap.has(currency)) {
+        priceCacheMap.set(currency, { price: null, lastUpdated: 0 });
+    }
+    const cacheEntry = priceCacheMap.get(currency);
+    const now = Date.now();
+
+    if (now - cacheEntry.lastUpdated > 1000 && !priceUpdatePromises.has(currency)) {
+        const updatePromise = fetch(`${SERVER_URL}/price/${currency}`)
+            .then(response => response.json())
+            .then(data => {
+                cacheEntry.price = data.price;
+                cacheEntry.lastUpdated = now;
+                priceUpdatePromises.delete(currency);
+                return data.price;
+            })
+            .catch(error => {
+                console.error(`Error fetching price for ${currency}:`, error);
+                priceUpdatePromises.delete(currency);
+                return null;
+            });
+
+        priceUpdatePromises.set(currency, updatePromise);
+        return updatePromise;
+    }
+
+    return priceUpdatePromises.get(currency) || Promise.resolve(cacheEntry.price);
+}
+
+function getSharedPrice(currency) {
+    return priceCacheMap.get(currency)?.price || null;
+}

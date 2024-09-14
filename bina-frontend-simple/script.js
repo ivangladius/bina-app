@@ -1,5 +1,5 @@
 // Replace with your actual server IP
-const SERVER_URL = 'http://192.168.178.29:8000';
+const SERVER_URL = 'http://localhost:8000';
 
 // Initial balance update
 updateBalance();
@@ -11,18 +11,48 @@ setInterval(async () => {
 
 // Function to switch tabs
 async function switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
-    document.getElementById(`${tabName}-tab`).classList.add('active');
-    document.querySelector(`.tab-button[data-tab="${tabName}"]`).classList.add('active');
+    console.log(`Switching to ${tabName} tab`);
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    const activeTab = document.getElementById(`${tabName}-tab`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    } else {
+        console.error(`Could not find tab with id ${tabName}-tab`);
+    }
+    
+    const activeButton = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+    } else {
+        console.error(`Could not find button for tab ${tabName}`);
+    }
     
     await updateBalance();
     
     if (tabName === 'pending-orders') {
-        startOrdersUpdate(); // Start the interval for updates, including the first update
-    } else if (tabName === 'filled-orders') {
-        await fetchFilledOrders();
-    } else {
+        const loadingContainer = document.getElementById('pendingOrdersLoading');
+        if (loadingContainer) loadingContainer.style.display = 'flex';
+        stopPriceUpdates();
         stopOrdersUpdate();
+        await fetchOrders();
+    } else if (tabName === 'filled-orders') {
+        const loadingContainer = document.getElementById('filledOrdersLoading');
+        if (loadingContainer) loadingContainer.style.display = 'flex';
+        stopPriceUpdates();
+        stopOrdersUpdate();
+        await fetchFilledOrders();
+    } else if (tabName === 'trade') {
+        startPriceUpdates();
+    } else {
+        console.error(`Unknown tab: ${tabName}`);
     }
 }
+
+// Make sure switchTab is available globally
+window.switchTab = switchTab;

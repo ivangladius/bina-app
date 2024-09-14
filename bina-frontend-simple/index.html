@@ -9,9 +9,9 @@
 <body>
     <h1>Crypto Trading Dashboard</h1>
     <div id="tabs">
-        <button class="tab-button active" data-tab="trade">Trade</button>
-        <button class="tab-button" data-tab="pending-orders">Pending Orders</button>
-        <button class="tab-button" data-tab="filled-orders">Filled Orders</button>
+        <button class="tab-button active" data-tab="trade" onclick="switchTab('trade')">Trade</button>
+        <button class="tab-button" data-tab="pending-orders" onclick="switchTab('pending-orders')">Pending Orders</button>
+        <button class="tab-button" data-tab="filled-orders" onclick="switchTab('filled-orders')">Filled Orders</button>
     </div>
     <div id="trade-tab" class="tab-content active">
         <div id="container">
@@ -34,47 +34,53 @@
     </div>
     <div id="pending-orders-tab" class="tab-content">
         <div id="balance-pending-orders" class="balance-display"></div>
-        <table id="pendingOrdersTable" class="orders-table">
-            <thead>
-                <tr>
-                    <th>Action</th>
-                    <th>Currency</th>
-                    <th>Current Price</th>
-                    <th>Top Limit</th>
-                    <th>Bottom Limit</th>
-                    <th>Amount</th>
-                    <th>Top Quantity</th>
-                    <th>Bottom Quantity</th>
-                    <th>Status</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Orders will be dynamically populated here -->
-            </tbody>
-        </table>
+        <div class="orders-table-container">
+            <table id="pendingOrdersTable" class="orders-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Currency</th>
+                        <th>Current Price</th>
+                        <th>Top Limit</th>
+                        <th>Bottom Limit</th>
+                        <th>Amount</th>
+                        <th>Top Quantity</th>
+                        <th>Bottom Quantity</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Orders will be dynamically populated here -->
+                </tbody>
+            </table>
+            <div id="pendingOrdersLoading" class="loading-container" style="display: none;">
+                <div class="loading-circle"></div>
+            </div>
+        </div>
     </div>
     <div id="filled-orders-tab" class="tab-content">
         <div id="balance-filled-orders" class="balance-display"></div>
-        <table id="filledOrdersTable" class="orders-table">
-            <thead>
-                <tr>
-                    <th>Currency</th>
-                    <th>Execution Price</th>
-                    <th>Top Limit</th>
-                    <th>Bottom Limit</th>
-                    <th>Amount</th>
-                    <th>Top Quantity</th>
-                    <th>Bottom Quantity</th>
-                    <th>Status</th>
-                    <th>Time</th>
-                    <th>Reason</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Filled orders will be dynamically populated here -->
-            </tbody>
-        </table>
+        <div class="orders-table-container">
+            <table id="filledOrdersTable" class="orders-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Symbol</th>
+                        <th>Price</th>
+                        <th>Side</th>
+                        <th>Quantity</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Filled orders will be dynamically populated here -->
+                </tbody>
+            </table>
+            <div id="filledOrdersLoading" class="loading-container" style="display: none;">
+                <div class="loading-circle"></div>
+            </div>
+        </div>
     </div>
 
     <script src="coins.js"></script>
@@ -83,5 +89,15 @@
     <script src="trade.js"></script>
     <script src="orders.js"></script>
     <script src="history.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const filledOrdersTab = document.getElementById('filled-orders-tab');
+            if (filledOrdersTab) {
+                console.log('Filled orders tab found in DOM');
+            } else {
+                console.error('Filled orders tab not found in DOM');
+            }
+        });
+    </script>
 </body>
 </html>

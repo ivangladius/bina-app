@@ -5,6 +5,7 @@ let ordersUpdateInterval;
 let isOrdersFetching = false;
 
 async function fetchOrders() {
+    console.log('Fetching orders...'); // Debug log
     try {
         const response = await fetch(`${SERVER_URL}/pending_orders`);
         if (!response.ok) {
@@ -13,33 +14,43 @@ async function fetchOrders() {
         const data = await response.json();
         pendingOrders = data.pending_orders;
         updatePendingOrdersTable();
+        await updatePrices(); // Update prices after fetching orders
     } catch (error) {
         console.error('Error fetching orders:', error);
     } finally {
         isOrdersFetching = false;
+        const loadingContainer = document.getElementById('pendingOrdersLoading');
+        if (loadingContainer) loadingContainer.style.display = 'none';
     }
 }
 
 function updatePendingOrdersTable() {
     const tableBody = document.querySelector('#pendingOrdersTable tbody');
+    
     tableBody.innerHTML = '';
     
-    pendingOrders.forEach(order => {
+    if (pendingOrders.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><button class="delete-order" data-id="${order.id}">Close</button></td>
-            <td>${order.currency}</td>
-            <td class="current-price" data-currency="${order.currency}">${order.current_price.toFixed(2)}</td>
-            <td>${order.top_limit.toFixed(2)}</td>
-            <td>${order.bottom_limit.toFixed(2)}</td>
-            <td>${order.amount.toFixed(2)}</td>
-            <td>${order.top_quantity.toFixed(8)}</td>
-            <td>${order.bottom_quantity.toFixed(8)}</td>
-            <td>${order.status}</td>
-            <td>${new Date(order.time).toLocaleString()}</td>
-        `;
+        row.innerHTML = '<td colspan="10">No pending orders available</td>';
         tableBody.appendChild(row);
-    });
+    } else {
+        pendingOrders.forEach(order => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><button class="delete-order" data-id="${order.id}">Close</button></td>
+                <td>${order.currency}</td>
+                <td class="current-price" data-currency="${order.currency}">${getSharedPrice(order.currency)?.toFixed(2) || 'Loading...'}</td>
+                <td>${order.top_limit.toFixed(2)}</td>
+                <td>${order.bottom_limit.toFixed(2)}</td>
+                <td>${order.amount.toFixed(2)}</td>
+                <td>${order.top_quantity.toFixed(8)}</td>
+                <td>${order.bottom_quantity.toFixed(8)}</td>
+                <td>${order.status}</td>
+                <td>${new Date(order.time).toLocaleString()}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
 
     // Add event listeners to delete buttons
     document.querySelectorAll('.delete-order').forEach(button => {
@@ -48,66 +59,80 @@ function updatePendingOrdersTable() {
 }
 
 function updateFilledOrdersTable() {
+    console.log('Updating filled orders table...');
     const tableBody = document.querySelector('#filledOrdersTable tbody');
+    
+    if (!tableBody) {
+        console.error('Could not find table body element');
+        return;
+    }
+    
     tableBody.innerHTML = '';
     
-    filledOrders.forEach(order => {
+    console.log('Number of filled orders:', filledOrders.length);
+    
+    if (filledOrders.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${order.currency}</td>
-            <td class="current-price" data-currency="${order.currency}">${order.execution_price.toFixed(2)}</td>
-            <td>${order.top_limit.toFixed(2)}</td>
-            <td>${order.bottom_limit.toFixed(2)}</td>
-            <td>${order.amount.toFixed(2)}</td>
-            <td>${(order.amount / order.execution_price).toFixed(8)}</td>
-            <td>${order.quantity.toFixed(8)}</td>
-            <td>${order.status}</td>
-            <td>${new Date(order.time).toLocaleString()}</td>
-            <td>${order.reason}</td>
-        `;
+        row.innerHTML = '<td colspan="6">No filled orders available</td>';
         tableBody.appendChild(row);
+    } else {
+        filledOrders.forEach(order => {
+            console.log('Processing order:', order);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><button class="delete-order delete-filled-order" data-id="${order.id}">Delete</button></td>
+                <td>${order.symbol}</td>
+                <td>${parseFloat(order.price).toFixed(2)}</td>
+                <td>${order.side}</td>
+                <td>${parseFloat(order.quantity).toFixed(8)}</td>
+                <td>${new Date(order.timestamp).toLocaleString()}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+    
+    // Add event listeners to delete buttons
+    document.querySelectorAll('.delete-filled-order').forEach(button => {
+        button.addEventListener('click', handleDeleteFilledOrder);
     });
+    
+    console.log('Finished updating filled orders table');
 }
 
 async function updatePrices() {
-    const pricePromises = pendingOrders.map(order =>
-        fetch(`${SERVER_URL}/price/${order.currency}`)
-            .then(response => response.json())
-            .then(data => ({ currency: order.currency, price: data.price }))
-            .catch(error => {
-                console.error(`Error fetching price for ${order.currency}:`, error);
-                return null;
-            })
-    );
+    if (pendingOrders.length === 0) return;
 
-    const prices = await Promise.all(pricePromises);
+    const currencies = [...new Set(pendingOrders.map(order => order.currency))];
+    await Promise.all(currencies.map(updateSharedPrice));
 
-    prices.forEach(priceData => {
-        if (priceData) {
-            const priceCell = document.querySelector(`.current-price[data-currency="${priceData.currency}"]`);
-            if (priceCell) {
-                priceCell.textContent = priceData.price.toFixed(2);
-            }
+    pendingOrders.forEach(order => {
+        const price = getSharedPrice(order.currency);
+        if (price !== null) {
+            const priceCells = document.querySelectorAll(`.current-price[data-currency="${order.currency}"]`);
+            priceCells.forEach(cell => {
+                cell.textContent = price.toFixed(2);
+            });
         }
     });
 }
 
 function startOrdersUpdate() {
+    console.log('Starting orders update...'); // Debug log
     if (ordersUpdateInterval) {
         clearInterval(ordersUpdateInterval);
     }
-    fetchOrders(); // Initial fetch when starting the updates
+    fetchOrders(); // Fetch immediately when starting updates
     ordersUpdateInterval = setInterval(async () => {
         if (!isOrdersFetching) {
             isOrdersFetching = true;
             await fetchOrders();
-            await updatePrices();
-            isOrdersFetching = false;
         }
-    }, 5000); // Update every 5 seconds
+    }, 3000); // Update every 3 seconds
 }
 
+// Add this function to stop the orders update interval
 function stopOrdersUpdate() {
+    console.log('Stopping orders update...'); // Debug log
     if (ordersUpdateInterval) {
         clearInterval(ordersUpdateInterval);
     }
@@ -143,15 +168,48 @@ async function handleDeleteOrder(event) {
 }
 
 async function fetchFilledOrders() {
+    console.log('Fetching filled orders...');
     try {
         const response = await fetch(`${SERVER_URL}/filled_orders`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        filledOrders = data.filled_orders || [];
+        console.log('Received filled orders data:', data);
+        filledOrders = data;
+        console.log('Filled orders array:', filledOrders);
         updateFilledOrdersTable();
     } catch (error) {
         console.error('Error fetching filled orders:', error);
+    } finally {
+        const loadingContainer = document.getElementById('filledOrdersLoading');
+        if (loadingContainer) loadingContainer.style.display = 'none';
     }
 }
+
+async function handleDeleteFilledOrder(event) {
+    const orderId = event.target.dataset.id;
+    
+    try {
+        const response = await fetch(`${SERVER_URL}/filled_order/${orderId}`, { 
+            method: 'DELETE'
+        });
+        if (!response.ok) {
+            throw new Error('Failed to delete filled order');
+        }
+        const data = await response.json();
+        alert(`Filled order deleted successfully. Order ID: ${data.order_id}`);
+        await fetchFilledOrders(); // Refresh the filled orders list
+    } catch (error) {
+        console.error('Error deleting filled order:', error);
+        alert('Failed to delete filled order. Please try again.');
+    }
+}
+
+// Make sure fetchOrders is available globally
+window.fetchOrders = fetchOrders;
+window.startOrdersUpdate = startOrdersUpdate;
+window.stopOrdersUpdate = stopOrdersUpdate;
+window.fetchFilledOrders = fetchFilledOrders;
+window.updateFilledOrdersTable = updateFilledOrdersTable;
+window.handleDeleteFilledOrder = handleDeleteFilledOrder;
