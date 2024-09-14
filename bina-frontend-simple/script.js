@@ -1,5 +1,5 @@
 // Replace with your actual server IP
-const SERVER_URL = 'http://localhost:8000';
+const SERVER_URL = 'http://192.168.178.31:8000';
 
 // Initial balance update
 updateBalance();
@@ -36,14 +36,10 @@ async function switchTab(tabName) {
     await updateBalance();
     
     if (tabName === 'pending-orders') {
-        const loadingContainer = document.getElementById('pendingOrdersLoading');
-        if (loadingContainer) loadingContainer.style.display = 'flex';
         stopPriceUpdates();
         stopOrdersUpdate();
         await fetchOrders();
     } else if (tabName === 'filled-orders') {
-        const loadingContainer = document.getElementById('filledOrdersLoading');
-        if (loadingContainer) loadingContainer.style.display = 'flex';
         stopPriceUpdates();
         stopOrdersUpdate();
         await fetchFilledOrders();

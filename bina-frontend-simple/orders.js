@@ -19,8 +19,6 @@ async function fetchOrders() {
         console.error('Error fetching orders:', error);
     } finally {
         isOrdersFetching = false;
-        const loadingContainer = document.getElementById('pendingOrdersLoading');
-        if (loadingContainer) loadingContainer.style.display = 'none';
     }
 }
 
@@ -182,8 +180,6 @@ async function fetchFilledOrders() {
     } catch (error) {
         console.error('Error fetching filled orders:', error);
     } finally {
-        const loadingContainer = document.getElementById('filledOrdersLoading');
-        if (loadingContainer) loadingContainer.style.display = 'none';
     }
 }
 

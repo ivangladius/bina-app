@@ -90,7 +90,7 @@ async function handleTradeSubmit(event) {
 // Add event listeners when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Add event listener for coin selection
-    document.getElementById('coinSearch').addEventListener('change', startPriceUpdates);
+    document.getElementById('coinSearch').addEventListener('input', debouncedStartPriceUpdates);
 
     // Add event listener for trade form submission
     document.getElementById('tradeForm').addEventListener('submit', handleTradeSubmit);
@@ -113,3 +113,17 @@ function stopPriceUpdates() {
         priceUpdateInterval = null;
     }
 }
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+const debouncedStartPriceUpdates = debounce(startPriceUpdates, 300);

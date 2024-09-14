@@ -187,5 +187,6 @@ const coinOptions = [
     { value: "GHST", name: "Aavegotchi (GHST)" },
     { value: "JASMY", name: "JasmyCoin (JASMY)" },
     { value: "1000SATS", name: "1000SATS" },
-    { value: "PEPE", name: "Pepe (PEPE)" }
+    { value: "PEPE", name: "Pepe (PEPE)" },
+    { value: "TON", name: "Toncoin (TON)" }
 ]
