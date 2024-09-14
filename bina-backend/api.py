@@ -42,7 +42,7 @@ class TradeParams(BaseModel):
 
 @app.get("/balance")
 async def get_balance():
-    client = Client(main.API_KEY, main.API_SECRET, testnet=True)
+    client = Client(main.API_KEY, main.API_SECRET, testnet=False)
     balances = main.get_account_balance(client)
     binance_balance = balances.get('USDT', 0)
     available_balance = binance_balance - total_trade_amount
@@ -55,7 +55,7 @@ async def start_trade(params: TradeParams):
     if params.amount is None and params.quantity is None:
         raise HTTPException(status_code=400, detail="Either amount or quantity must be provided")
     
-    client = Client(main.API_KEY, main.API_SECRET, testnet=True)
+    client = Client(main.API_KEY, main.API_SECRET, testnet=False)
     symbol = main.get_symbol(params.currency)
     
     # Calculate the amount to subtract from the balance
@@ -135,7 +135,7 @@ async def get_candle_data(pair: str = Query(...), interval: str = Query(default=
         # Remove slash if present and convert to uppercase
         formatted_pair = pair.replace("/", "").upper()
         
-        client = Client(main.API_KEY, main.API_SECRET, testnet=True)
+        client = Client(main.API_KEY, main.API_SECRET, testnet=False)
         
         # Try to get klines, if it fails, try adding 'T' for USDT pairs
         try:
@@ -168,7 +168,7 @@ async def get_coin_price(coin: str):
         # Convert to uppercase and add USDT
         formatted_symbol = f"{coin.upper()}USDT"
         
-        client = Client(main.API_KEY, main.API_SECRET, testnet=True)
+        client = Client(main.API_KEY, main.API_SECRET, testnet=False)
         
         ticker = client.get_symbol_ticker(symbol=formatted_symbol)
         

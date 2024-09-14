@@ -11,8 +11,8 @@ RED = '\033[91m'
 RESET = '\033[0m'
 
 # Global variables for API keys
-API_KEY = os.environ.get('BINANCE_TESTNET_API_KEY')
-API_SECRET = os.environ.get('BINANCE_TESTNET_SECRET_KEY')
+API_KEY = os.environ.get('BINANCE_API_KEY')
+API_SECRET = os.environ.get('BINANCE_SECRET_KEY')
 
 def get_symbol(base_currency):
     return f"{base_currency.upper()}USDT"

@@ -12,8 +12,8 @@ build:
 # Docker run command with volume mounting
 run:
 	sudo docker run --rm -p $(PORT):$(PORT) \
-		-e BINANCE_TESTNET_API_KEY=${BINANCE_TESTNET_API_KEY} \
-		-e BINANCE_TESTNET_SECRET_KEY=${BINANCE_TESTNET_SECRET_KEY} \
+		-e BINANCE_API_KEY=${BINANCE_API_KEY} \
+		-e BINANCE_SECRET_KEY=${BINANCE_SECRET_KEY} \
 		-v ${PWD}:/app \
 		--name $(CONTAINER_NAME) \
 		$(IMAGE_NAME)
