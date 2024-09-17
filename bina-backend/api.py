@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -12,10 +12,24 @@ import asyncio
 from fastapi.responses import FileResponse, HTMLResponse
 import os
 import database
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from jose import jwt
+import secrets
+from auth import create_access_token, verify_token, verify_password, LoginCredentials
+
+# Add these lines after the existing global variables
+SECRET_KEY = os.environ.get("SECRET_KEY", "")  # Replace with a secure secret key
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Add this line
 executor = ThreadPoolExecutor()
 
+# Add this function to create a global dependency
+def get_current_user(token: dict = Depends(verify_token)):
+    return token
+
+# Create the FastAPI app without global dependencies
 app = FastAPI()
 
 app.add_middleware(
@@ -40,7 +54,7 @@ class TradeParams(BaseModel):
     amount: Optional[float] = None
     quantity: Optional[float] = None
 
-@app.get("/balance")
+@app.get("/balance", dependencies=[Depends(get_current_user)])
 async def get_balance():
     client = Client(main.API_KEY, main.API_SECRET, testnet=False)
     balances = main.get_account_balance(client)
@@ -48,7 +62,7 @@ async def get_balance():
     available_balance = binance_balance - total_trade_amount
     return {"balance": available_balance}
 
-@app.post("/trade")
+@app.post("/trade", dependencies=[Depends(get_current_user)])
 async def start_trade(params: TradeParams):
     global total_trade_amount, pending_orders, filled_orders
     
@@ -120,16 +134,16 @@ async def start_trade(params: TradeParams):
     
     return {"message": "Trade started successfully", "pending_order_id": pending_order['id'], "total_trade_amount": total_trade_amount}
 
-@app.get("/pending_orders")
+@app.get("/pending_orders", dependencies=[Depends(get_current_user)])
 async def get_pending_orders(limit: int = Query(10, description="Number of recent pending orders to retrieve")):
     recent_orders = pending_orders[-limit:]
     return {"pending_orders": recent_orders}
 
-@app.get("/filled_orders")
+@app.get("/filled_orders", dependencies=[Depends(get_current_user)])
 async def get_filled_orders(limit: int = Query(10, ge=1, le=100)):
     return database.get_filled_orders(limit)
 
-@app.get("/candles")
+@app.get("/candles", dependencies=[Depends(get_current_user)])
 async def get_candle_data(pair: str = Query(...), interval: str = Query(default="1h"), limit: int = Query(default=100)):
     try:
         # Remove slash if present and convert to uppercase
@@ -162,7 +176,7 @@ async def get_candle_data(pair: str = Query(...), interval: str = Query(default=
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
-@app.get("/price/{coin}")
+@app.get("/price/{coin}", dependencies=[Depends(get_current_user)])
 async def get_coin_price(coin: str):
     try:
         # Convert to uppercase and add USDT
@@ -181,7 +195,7 @@ async def get_coin_price(coin: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
-@app.get("/order/{order_id}")
+@app.get("/order/{order_id}", dependencies=[Depends(get_current_user)])
 async def get_order(order_id: str):
     order = next((order for order in pending_orders if order['id'] == order_id), None)
     if order:
@@ -193,7 +207,7 @@ async def get_order(order_id: str):
     
     raise HTTPException(status_code=404, detail="Order not found")
 
-@app.delete("/order/{order_id}")
+@app.delete("/order/{order_id}", dependencies=[Depends(get_current_user)])
 async def delete_order(order_id: str, refund_amount: float = Query(..., description="Amount to be refunded")):
     global pending_orders, total_trade_amount
     
@@ -212,7 +226,7 @@ async def delete_order(order_id: str, refund_amount: float = Query(..., descript
     
     raise HTTPException(status_code=404, detail="Order not found")
 
-@app.delete("/filled_order/{order_id}")
+@app.delete("/filled_order/{order_id}", dependencies=[Depends(get_current_user)])
 async def delete_filled_order(order_id: str):
     global filled_orders
     
@@ -227,7 +241,23 @@ async def delete_filled_order(order_id: str):
     else:
         raise HTTPException(status_code=404, detail="Filled order not found in database")
 
+# Login route without authentication
+@app.post("/login")
+async def login(password: str = Form(...)):
+    if verify_password(password):
+        token = create_access_token(data={"sub": "user"})
+        return {"token": token}
+    else:
+        raise HTTPException(status_code=401, detail="Incorrect password")
+
 if __name__ == "__main__":
     database.init_db()  # Initialize the database
     import uvicorn
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "api:app",
+        host="0.0.0.0",
+        port=8000,
+        ssl_keyfile="key.pem",  # Path to your SSL key
+        ssl_certfile="cert.pem",  # Path to your SSL certificate
+        reload=True
+    )
